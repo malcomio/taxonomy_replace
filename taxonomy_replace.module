@@ -1,7 +1,6 @@
 <?php
 
 
-// TODO: add local tab to /taxonomy/term/%
 // TODO: add operations to /admin/structure/taxonomy/manage/%/overview
 
 /**

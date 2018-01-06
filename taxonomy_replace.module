@@ -22,6 +22,7 @@ function taxonomy_replace_entity_type_build(array &$entity_types) {
  *   TRUE if the field contains a reference to that term.
  */
 function taxonomy_replace_has_reference($node, $field_name, $tid) {
+  // TODO: is there a more efficient way to do this, or a core function?
   $has_reference = FALSE;
   $node_term_list = $node->{$field_name};
   $terms_on_node = $node_term_list->referencedEntities();

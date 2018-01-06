@@ -8,8 +8,6 @@ use Drupal\Core\Url;
 
 class TaxonomyReplaceForm extends ContentEntityDeleteForm {
 
-  protected $replacement_tid = NULL;
-
   /**
    * {@inheritdoc}
    */
@@ -88,10 +86,7 @@ class TaxonomyReplaceForm extends ContentEntityDeleteForm {
     $new_tid = $form_state->getValue('new_tid');
     
     $new_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($new_tid);
-    
-    $this->replacement_tid = $new_tid;
-    
-    // TODO: Replace with new term.
+
     // Get all references to the current term.
     $nodes = $this->get_nids_by_tid($this->entity->id());
     foreach ($nodes as $row) {
@@ -130,7 +125,9 @@ class TaxonomyReplaceForm extends ContentEntityDeleteForm {
     parent::submitForm($form, $form_state);
 
     // Redirect to the new taxonomy term.
-    $form_state->setRedirectUrl($this->getRedirectUrl());
+    $form_state->setRedirectUrl(new Url('entity.taxonomy_term.canonical', [
+      'taxonomy_term' => $new_tid,
+    ]));
   }
 
   /**
@@ -150,12 +147,6 @@ class TaxonomyReplaceForm extends ContentEntityDeleteForm {
    */
   public function getCancelUrl() {
     return new Url('entity.taxonomy_vocabulary.collection');
-  }
-
-  public function getRedirectUrl() {
-    return new Url('entity.taxonomy_term.canonical', [
-      'taxonomy_term' => $this->replacement_tid,
-    ]);    
   }
 
   protected function get_nids_by_tid($term_id) {

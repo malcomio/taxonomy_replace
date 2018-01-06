@@ -2,11 +2,13 @@
 
 namespace Drupal\taxonomy_replace\Form;
 
-use Drupal\Core\Entity\ContentEntityConfirmFormBase;
+use Drupal\Core\Entity\ContentEntityDeleteForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
-class TaxonomyReplaceForm extends ContentEntityConfirmFormBase {
+class TaxonomyReplaceForm extends ContentEntityDeleteForm {
+
+  protected $replacement_tid = NULL;
 
   /**
    * {@inheritdoc}
@@ -59,6 +61,7 @@ class TaxonomyReplaceForm extends ContentEntityConfirmFormBase {
     $form['new_tid'] = [
       '#title' => $this->t('Taxonomy term to use instead'),
       '#type' => 'entity_autocomplete',
+      '#required' => TRUE,
       '#target_type' => 'taxonomy_term',
       // Limit the selection to the same vocabulary.
       '#selection_settings' => [
@@ -81,28 +84,53 @@ class TaxonomyReplaceForm extends ContentEntityConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    kint($form_state);
-
-    // TODO: Get all references to the current term.
-    $nodes = $this->get_nids_by_tid($this->entity->id());
-
     $old_tid = $form_state->getValue('old_tid');
     $new_tid = $form_state->getValue('new_tid');
     
+    $new_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($new_tid);
+    
+    $this->replacement_tid = $new_tid;
+    
     // TODO: Replace with new term.
+    // Get all references to the current term.
+    $nodes = $this->get_nids_by_tid($this->entity->id());
     foreach ($nodes as $row) {
       $node = \Drupal::entityTypeManager()->getStorage('node')->load($row->nid);
       
-      // 
+      // TODO: Find the real term reference field.
+      $field_name = 'tags';
+
+      // TODO: check if there is already a reference to the new term.
+
+      // Add a reference to the new term.
+      $node->{$field_name}->appendItem($new_term);
+      
+      // Remove the old term reference.
+      $node_term_list = $node->{$field_name};
+      $terms_on_node = $node_term_list->referencedEntities();
+      foreach ($terms_on_node as $key => $term) {
+        if ($term->id() == $old_tid) {
+          $node->{$field_name}->removeItem($key);
+        }
+      }
+      
+      $node->save();
     }
 
-    // TODO: Delete current term.
-    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-    $entity = $this->getEntity();
+    $message = 'References to %old_term have been replaced by references to %new_term';
+    $tokens = [
+      '%old_term' => $this->entity->label(),
+      '%new_term' => $new_term->label(),
+    ];
+    drupal_set_message($this->t($message, $tokens));
 
-    // TODO: Log the replacement.
-    
-    // TODO: Redirect somewhere sensible.
+    $this->logger($this->getEntity()->getEntityType()->getProvider())->notice($message, $tokens);
+
+    // Delete the old term.
+    parent::submitForm($form, $form_state);
+
+    // Redirect to the new taxonomy term.
+    $form_state->setRedirectUrl($this->getRedirectUrl());
   }
 
   /**
@@ -125,7 +153,9 @@ class TaxonomyReplaceForm extends ContentEntityConfirmFormBase {
   }
 
   public function getRedirectUrl() {
-
+    return new Url('entity.taxonomy_term.canonical', [
+      'taxonomy_term' => $this->replacement_tid,
+    ]);    
   }
 
   protected function get_nids_by_tid($term_id) {

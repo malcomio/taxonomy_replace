@@ -10,3 +10,27 @@ function taxonomy_replace_entity_type_build(array &$entity_types) {
   // Add a custom entity form.
   $entity_types['taxonomy_term']->setFormClass('replace', '\Drupal\taxonomy_replace\Form\TaxonomyReplaceForm');
 }
+
+/**
+ * Check if a node field has a particular term reference.
+ *
+ * @param Node $node
+ * @param string $field_name
+ * @param int $tid
+ *
+ * @return bool
+ *   TRUE if the field contains a reference to that term.
+ */
+function taxonomy_replace_has_reference($node, $field_name, $tid) {
+  $has_reference = FALSE;
+  $node_term_list = $node->{$field_name};
+  $terms_on_node = $node_term_list->referencedEntities();
+  foreach ($terms_on_node as $key => $term) {
+    if ($term->id() == $tid) {
+      $has_reference = TRUE;
+      break;
+    }
+  }
+
+  return $has_reference;
+}

@@ -95,10 +95,10 @@ class TaxonomyReplaceForm extends ContentEntityDeleteForm {
       // TODO: Find the real term reference field.
       $field_name = 'tags';
 
-      // TODO: check if there is already a reference to the new term.
-
-      // Add a reference to the new term.
-      $node->{$field_name}->appendItem($new_term);
+      // Add a reference to the new term, unless there is one already.
+      if (!taxonomy_replace_has_reference($node, $field_name, $new_tid)) {
+        $node->{$field_name}->appendItem($new_term);
+      }
       
       // Remove the old term reference.
       $node_term_list = $node->{$field_name};
@@ -149,6 +149,15 @@ class TaxonomyReplaceForm extends ContentEntityDeleteForm {
     return new Url('entity.taxonomy_vocabulary.collection');
   }
 
+  /**
+   * Get all nodes with a term ID. 
+   *
+   * @param int $term_id
+   *   The term ID to search for.
+   *
+   * @return mixed
+   *   Array of nid and tid
+   */
   protected function get_nids_by_tid($term_id) {
     $query = \Drupal::database()->select('taxonomy_index', 'ti');
     $query->fields('ti', ['nid', 'tid']);

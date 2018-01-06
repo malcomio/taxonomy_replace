@@ -21,13 +21,15 @@ class TaxonomyReplaceForm extends ContentEntityConfirmFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = parent::buildForm($form, $form_state);
 
-    $entity = $this->getEntity();
-    $old_tid = $entity->id();
-
+    $term = $this->getEntity();
+    $old_tid = $term->id();
+    $vid = $term->getVocabularyId();
+    
+    
     $form['old_term'] = [
       '#title' => $this->t('Current taxonomy term'),
       '#type' => 'textfield',
-      '#value' => $entity->label() . " ($old_tid)",
+      '#value' => $term->label() . " ($old_tid)",
       '#disabled' => TRUE,
     ];
 
@@ -58,7 +60,12 @@ class TaxonomyReplaceForm extends ContentEntityConfirmFormBase {
       '#title' => $this->t('Taxonomy term to use instead'),
       '#type' => 'entity_autocomplete',
       '#target_type' => 'taxonomy_term',
-      // TODO: limit to current vocabulary? '#selection_settings' => ['target_bundles']
+      // Limit the selection to the same vocabulary.
+      '#selection_settings' => [
+        'target_bundles' => [
+          $vid => $vid,
+        ],
+      ],
     ];
 
     $form['actions']['submit'] = [
